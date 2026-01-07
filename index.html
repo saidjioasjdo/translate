@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>翻译</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f9fafb; }
+        .result-card { display: none; } /* 初始隐藏结果 */
+    </style>
+</head>
+<body class="flex flex-col items-center p-6">
+
+    <div class="w-full max-w-2xl mt-10">
+        <textarea id="inputText" rows="5"
+            class="w-full p-4 border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-black resize-none text-lg"
+            placeholder="输入文字，自动中英互译..."></textarea>
+
+        <button id="translateBtn" onclick="handleTranslate()"
+            class="w-full mt-4 bg-black text-white py-4 rounded-xl font-medium hover:opacity-90 transition-all flex justify-center items-center gap-2">
+            <span id="btnText">立即翻译</span>
+            <div id="loader" class="hidden w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+        </button>
+
+        <div id="resultCard" class="result-card mt-8 p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
+            <div class="mb-4">
+                <p class="text-sm text-gray-400 mb-1">翻译结果</p>
+                <div id="outputTranslation" class="text-xl text-gray-800 leading-relaxed"></div>
+            </div>
+
+            <hr class="my-4 border-gray-50">
+
+            <div>
+                <p class="text-sm text-gray-400 mb-2">重点词汇</p>
+                <div id="keywordsContainer" class="flex flex-wrap gap-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function handleTranslate() {
+            const input = document.getElementById('inputText').value.trim();
+            const btnText = document.getElementById('btnText');
+            const loader = document.getElementById('loader');
+            const resultCard = document.getElementById('resultCard');
+            const outputDiv = document.getElementById('outputTranslation');
+            const keywordsDiv = document.getElementById('keywordsContainer');
+
+            if (!input) return;
+            btnText.textContent = '处理中';
+            loader.classList.remove('hidden');
+            resultCard.style.display = 'none';
+
+            try {
+
+                const response = await fetch(`http://127.0.0.1:8000/translate?sentence=${encodeURIComponent(input)}`, {
+                    method: 'POST'
+                });
+                const rawData = await response.json();
+                const cleanJson = rawData.match(/\{[\s\S]*\}/)[0];
+                const data = JSON.parse(cleanJson);
+                outputDiv.textContent = data.translation;
+                keywordsDiv.innerHTML = data.keywords.map(word =>
+                    `<span class="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-lg">${word}</span>`
+                ).join('');
+                resultCard.style.display = 'block';
+            } catch (e) {
+                alert("翻译出错，请检查后端是否运行");
+            } finally {
+                btnText.textContent = '立即翻译';
+                loader.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
